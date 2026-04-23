@@ -151,6 +151,97 @@ router.get('/trending', async (req, res) => {
   res.json({ properties: stripPhone(data) });
 });
 
+// GET /api/properties/:id/related — listings similar to the given one.
+// Returns three pre-bucketed lists so the client can render distinct strips
+// without further filtering:
+//   same_locality    — same neighbourhood (highest intent)
+//   same_type        — same room_type in the same city
+//   similar_price    — same city, rent within ±25% of the source
+// Three queries run in parallel; results are de-duplicated across buckets
+// in priority order (locality > type > price) so no card repeats.
+router.get('/:id/related', async (req, res) => {
+  const { id } = req.params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'Invalid id' });
+
+  // Fetch only the fields we need to build the three queries.
+  const { data: src, error: sErr } = await supabaseAdmin
+    .from('properties')
+    .select('id, city, locality, room_type, rent, is_active, deleted_at')
+    .eq('id', id)
+    .single();
+  if (sErr || !src) return res.status(404).json({ error: 'Not found' });
+
+  const perBucket = Math.min(Math.max(Number(req.query.limit) || 8, 1), 12);
+  const minRent = Math.floor(Number(src.rent) * 0.75);
+  const maxRent = Math.ceil(Number(src.rent) * 1.25);
+
+  const selectCols = `${CORE_COLUMNS}, property_images(image_url, sort_order)`;
+  const base = () => supabaseAdmin
+    .from('properties')
+    .select(selectCols)
+    .eq('is_active', true)
+    .is('deleted_at', null)
+    .neq('id', id);
+
+  // The "others" bucket is a grid of every remaining active listing,
+  // surfaced under the three relevance strips so the user can explore
+  // the full catalogue without leaving the page.
+  const othersLimit = Math.min(Math.max(Number(req.query.othersLimit) || 12, 1), 60);
+
+  // Parallelise — latency = max of four, not sum.
+  const [locRes, typeRes, priceRes, othersRes, totalRes] = await Promise.all([
+    base().eq('locality', src.locality).order('created_at', { ascending: false }).limit(perBucket),
+    src.room_type
+      ? base().eq('city', src.city).eq('room_type', src.room_type)
+          .order('created_at', { ascending: false }).limit(perBucket)
+      : Promise.resolve({ data: [] }),
+    base().eq('city', src.city).gte('rent', minRent).lte('rent', maxRent)
+      .order('rent', { ascending: true }).limit(perBucket),
+    // Over-fetch then dedupe client-side. perBucket*3 guarantees we have
+    // enough rows left over after removing duplicates.
+    base().order('created_at', { ascending: false }).limit(othersLimit + perBucket * 3),
+    supabaseAdmin
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .is('deleted_at', null),
+  ]);
+
+  // De-duplicate: a listing that qualifies for locality shouldn't also
+  // appear under type/price/others. Priority = locality > type > price > others.
+  const seen = new Set();
+  const dedupe = (rows) => {
+    const out = [];
+    for (const p of rows || []) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      out.push(p);
+    }
+    return out;
+  };
+
+  const same_locality = stripPhone(dedupe(locRes.data));
+  const same_type     = stripPhone(dedupe(typeRes.data));
+  const similar_price = stripPhone(dedupe(priceRes.data));
+  const others        = stripPhone(dedupe(othersRes.data).slice(0, othersLimit));
+
+  res.json({
+    same_locality,
+    same_type,
+    similar_price,
+    others,
+    total_active: totalRes.count || 0,
+    source: {
+      locality:   src.locality,
+      city:       src.city,
+      room_type:  src.room_type,
+      rent:       src.rent,
+      min_rent:   minRent,
+      max_rent:   maxRent,
+    },
+  });
+});
+
 // POST /api/properties/:id/view — fire-and-forget view counter.
 // Unauthenticated on purpose (public listings = public views) but still
 // rate-limited by the global middleware. The RPC is a no-op if the id is

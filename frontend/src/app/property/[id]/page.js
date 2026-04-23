@@ -9,6 +9,7 @@ import ReportModal from '@/app/_components/ReportModal';
 import SubscriptionModal from '@/app/_components/SubscriptionModal';
 import SaveButton from '@/app/_components/SaveButton';
 import LazyImg from '@/app/_components/LazyImg';
+import RelatedListings from '@/app/_components/RelatedListings';
 
 export default function PropertyDetail({ params }) {
   const { id } = use(params);
@@ -26,10 +27,11 @@ export default function PropertyDetail({ params }) {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
+      const { data } = await supabase.auth.getSession();
+      const u = data.session?.user ?? null;
+      setUser(u);
       try {
-        const r = await apiGet(`/api/properties/${id}`, { auth: !!data.user });
+        const r = await apiGet(`/api/properties/${id}`, { auth: !!u });
         setProp(r.property);
       } catch (e) { setErr(e.message); }
     })();
@@ -393,6 +395,8 @@ export default function PropertyDetail({ params }) {
             </div>
           </aside>
         </div>
+
+        <RelatedListings propertyId={id} />
       </div>
     </div>
   );

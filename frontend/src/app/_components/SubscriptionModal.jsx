@@ -46,7 +46,7 @@ export default function SubscriptionModal({
     setErr('');
     Promise.all([
       apiGet('/api/plans').then((r) => setPlans(r.plans || [])),
-      supabase.auth.getUser().then(({ data }) => setUser(data.user)),
+      supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null)),
     ]).finally(() => setLoading(false));
   }, [open]);
 

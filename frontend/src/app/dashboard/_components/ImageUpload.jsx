@@ -19,8 +19,8 @@ export default function ImageUpload({ urls, onChange }) {
     }
     setErr(''); setBusy(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
+      const { data: userData } = await supabase.auth.getSession();
+      const uid = userData.session?.user?.id;
       if (!uid) throw new Error('Please sign in first.');
 
       const newUrls = [];

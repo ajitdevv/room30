@@ -37,9 +37,10 @@ function ChatRoom({ userId }) {
   const lastSigRef = useRef('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push('/login'); return; }
-      setMe(data.user);
+    supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (!u) { router.push('/login'); return; }
+      setMe(u);
       load();
     });
     const onVis = () => {

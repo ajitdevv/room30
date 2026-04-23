@@ -21,18 +21,23 @@ export function useAuthUser() {
   }
 
   async function refresh() {
-    const { data } = await supabase.auth.getUser();
-    setUser(data.user ?? null);
-    await loadProfile(data.user);
+    // getSession() reads the cached session — no network, no auth lock.
+    // The backend still verifies the JWT on every request, so we don't
+    // need a server round-trip just to know who the user is client-side.
+    const { data } = await supabase.auth.getSession();
+    const u = data.session?.user ?? null;
+    setUser(u);
+    await loadProfile(u);
   }
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getSession();
       if (!alive) return;
-      setUser(data.user ?? null);
-      await loadProfile(data.user);
+      const u = data.session?.user ?? null;
+      setUser(u);
+      await loadProfile(u);
       setLoading(false);
     })();
 

@@ -30,8 +30,8 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { router.push('/login'); return; }
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session?.user) { router.push('/login'); return; }
       try { await reload(); } finally { setLoading(false); }
     });
   }, [router, reload]);

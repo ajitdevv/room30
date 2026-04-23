@@ -17,8 +17,8 @@ export default function ChatList() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push('/login'); return; }
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session?.user) { router.push('/login'); return; }
       apiGet('/api/chat/threads', { auth: true })
         .then((r) => setThreads(r.threads || []))
         .finally(() => setLoading(false));

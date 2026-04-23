@@ -17,8 +17,8 @@ export default function PlanUsagePage() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data: s } = await supabase.auth.getUser();
-      if (!s.user) { router.push('/login?next=/dashboard/plan'); return; }
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) { router.push('/login?next=/dashboard/plan'); return; }
       try {
         const r = await apiGet('/api/me/plan-usage', { auth: true });
         if (alive) setData(r);
