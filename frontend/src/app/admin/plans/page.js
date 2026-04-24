@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet, apiPatch } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { Header } from '../users/page';
 
 export default function PlansAdmin() {
@@ -12,7 +13,7 @@ export default function PlansAdmin() {
     let alive = true;
     apiGet('/api/admin/plans', { auth: true })
       .then((r) => alive && setPlans(r.plans || []))
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e, { context: 'plan' })))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, []);
@@ -75,7 +76,7 @@ function PlanCard({ plan, onSaved }) {
       const r = await apiPatch(`/api/admin/plans/${plan.id}`, payload, { auth: true });
       onSaved(r.plan);
       setEdit(false);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e, { fallback: "We couldn't save the plan. Please try again." })); }
     finally { setSaving(false); }
   }
 

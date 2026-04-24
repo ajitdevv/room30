@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function DeleteConfirmModal({ property, onClose, onDeleted }) {
@@ -28,7 +29,7 @@ export default function DeleteConfirmModal({ property, onClose, onDeleted }) {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || 'Delete failed');
+        throw Object.assign(new Error(j.error || res.statusText), { status: res.status, body: j });
       }
       setPhase('done');
       setTimeout(() => {
@@ -36,7 +37,7 @@ export default function DeleteConfirmModal({ property, onClose, onDeleted }) {
         onClose?.();
       }, 2200);
     } catch (e) {
-      setErr(e.message);
+      setErr(friendlyError(e, { fallback: "We couldn't delete that listing. Please try again." }));
       setPhase('confirm');
     } finally {
       setBusy(false);

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 
 const JAIPUR_LOCALITIES = [
   'Vaishali Nagar', 'Malviya Nagar', 'Mansarovar', 'C-Scheme',
@@ -80,11 +81,11 @@ export default function PropertyEditModal({ property, onClose, onSaved }) {
         body: JSON.stringify(body),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof j.error === 'string' ? j.error : 'Save failed');
+      if (!res.ok) throw Object.assign(new Error(typeof j.error === 'string' ? j.error : res.statusText), { status: res.status, body: j });
       onSaved?.(j.property);
       onClose?.();
     } catch (e) {
-      setErr(e.message);
+      setErr(friendlyError(e, { fallback: "We couldn't save your changes. Please try again." }));
     } finally {
       setBusy(false);
     }

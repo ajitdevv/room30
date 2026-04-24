@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 import { Header } from '../users/page';
 
@@ -47,7 +48,7 @@ function ListingsAdmin() {
         setItems(r.properties || []);
         setTotal(r.total || 0);
       })
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e, { context: 'listing' })))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page, status, debQ]);
@@ -58,7 +59,7 @@ function ListingsAdmin() {
     try {
       const r = await apiPatch(`/api/admin/properties/${p.id}`, { is_active: !p.is_active }, { auth: true });
       setItems((prev) => prev.map((x) => x.id === p.id ? { ...x, is_active: r.property.is_active } : x));
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e)); }
     finally { setBusyId(null); }
   }
 
@@ -70,7 +71,7 @@ function ListingsAdmin() {
       setItems((prev) => prev.filter((x) => x.id !== p.id));
       setTotal((t) => Math.max(0, t - 1));
       setConfirmDel(null);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e)); }
     finally { setBusyId(null); }
   }
 
@@ -78,35 +79,37 @@ function ListingsAdmin() {
     <div>
       <Header title="Listings" subtitle="Pause, resume, or permanently delete any listing." count={total} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search title, city, locality…"
-          className="w-full flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none transition focus:border-indigo-400 sm:w-auto"
+          className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 sm:flex-1"
         />
-        <div className="inline-flex overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs font-semibold">
-          {[
-            ['all', 'All'],
-            ['live', 'Live'],
-            ['paused', 'Paused'],
-            ['deleted', 'Deleted'],
-          ].map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => {
-                setStatus(v);
-                const params = new URLSearchParams(sp.toString());
-                if (v === 'all') params.delete('status'); else params.set('status', v);
-                router.replace(`/admin/listings?${params.toString()}`);
-              }}
-              className={`rounded-full px-3 py-1.5 transition ${
-                status === v ? 'bg-[var(--fg)] text-[var(--bg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="inline-flex whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs font-semibold">
+            {[
+              ['all', 'All'],
+              ['live', 'Live'],
+              ['paused', 'Paused'],
+              ['deleted', 'Deleted'],
+            ].map(([v, l]) => (
+              <button
+                key={v}
+                onClick={() => {
+                  setStatus(v);
+                  const params = new URLSearchParams(sp.toString());
+                  if (v === 'all') params.delete('status'); else params.set('status', v);
+                  router.replace(`/admin/listings?${params.toString()}`);
+                }}
+                className={`rounded-full px-3 py-1.5 transition ${
+                  status === v ? 'bg-[var(--fg)] text-[var(--bg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -128,9 +131,9 @@ function ListingsAdmin() {
                   ? { text: 'Live', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300' }
                   : { text: 'Paused', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-300' };
               return (
-                <li key={p.id} className="flex flex-wrap items-center gap-3 px-5 py-4 text-sm">
+                <li key={p.id} className="flex flex-col gap-3 px-4 py-3.5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-5 sm:py-4">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link href={`/property/${p.id}`} target="_blank" className="line-clamp-1 font-semibold transition hover:text-indigo-500">
                         {p.title}
                       </Link>
@@ -138,27 +141,27 @@ function ListingsAdmin() {
                         {statusBadge.text}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-[11px] text-[var(--muted)]">
+                    <div className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
                       #{p.listing_number ?? '—'} · {p.locality}, {p.city} ·{' '}
-                      <span className="text-indigo-500 font-semibold">₹{p.rent.toLocaleString('en-IN')}/mo</span>
+                      <span className="font-semibold text-indigo-500">₹{p.rent.toLocaleString('en-IN')}/mo</span>
                     </div>
                     <div className="mt-0.5 text-[11px] text-[var(--muted)]">
                       by {p.profiles?.name?.trim() || p.profiles?.email || '—'}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex gap-2 sm:shrink-0">
                     <button
                       onClick={() => togglePause(p)}
                       disabled={busyId === p.id || !!p.deleted_at}
-                      className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold transition hover:border-amber-400 hover:text-amber-600 disabled:opacity-50"
+                      className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold transition hover:border-amber-400 hover:text-amber-600 disabled:opacity-50 sm:flex-none sm:py-1.5"
                     >
                       {p.is_active ? 'Pause' : 'Resume'}
                     </button>
                     <button
                       onClick={() => setConfirmDel(p)}
                       disabled={busyId === p.id}
-                      className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20 disabled:opacity-50"
+                      className="flex-1 rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20 sm:flex-none sm:py-1.5"
                     >
                       Delete
                     </button>

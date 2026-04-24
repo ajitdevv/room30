@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiGet, apiPatch } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 
 export default function UsersAdminPage() {
@@ -45,7 +46,7 @@ function UsersAdmin() {
         setUsers(r.users || []);
         setTotal(r.total || 0);
       })
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e, { context: 'user' })))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page, roleFilter, debQ]);
@@ -57,7 +58,7 @@ function UsersAdmin() {
     try {
       const r = await apiPatch(`/api/admin/users/${u.id}`, { role }, { auth: true });
       setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, role: r.user.role } : x));
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e)); }
     finally { setBusyId(null); }
   }
 
@@ -69,12 +70,12 @@ function UsersAdmin() {
         count={total}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by email or name…"
-          className="w-full flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none transition focus:border-indigo-400 sm:w-auto"
+          className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 sm:flex-1"
         />
         <select
           value={roleFilter}
@@ -84,7 +85,7 @@ function UsersAdmin() {
             if (e.target.value) params.set('role', e.target.value); else params.delete('role');
             router.replace(`/admin/users?${params.toString()}`);
           }}
-          className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium outline-none"
+          className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium outline-none sm:w-auto"
         >
           <option value="">All roles</option>
           <option value="renter">Renters</option>
@@ -155,13 +156,11 @@ function UsersAdmin() {
 
 export function Header({ title, subtitle, count }) {
   return (
-    <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p>}
-      </div>
+    <header className="mb-5">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+      {subtitle && <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{subtitle}</p>}
       {count !== undefined && (
-        <span className="rounded-full bg-[var(--elevated)] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
+        <span className="mt-2 inline-flex rounded-full bg-[var(--elevated)] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
           {count.toLocaleString('en-IN')} total
         </span>
       )}

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 import Pagination from '../../_components/Pagination';
 
@@ -22,7 +23,7 @@ export default function PlanUsagePage() {
       try {
         const r = await apiGet('/api/me/plan-usage', { auth: true });
         if (alive) setData(r);
-      } catch (e) { if (alive) setErr(e.message); }
+      } catch (e) { if (alive) setErr(friendlyError(e, { context: 'plan' })); }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };

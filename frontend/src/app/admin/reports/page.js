@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiGet, apiPatch } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 import { Header } from '../users/page';
 
@@ -45,7 +46,7 @@ function ReportsAdmin() {
         setItems(r.reports || []);
         setTotal(r.total || 0);
       })
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e)))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page, status]);
@@ -56,7 +57,7 @@ function ReportsAdmin() {
     try {
       await apiPatch(`/api/admin/reports/${r.id}`, { status: newStatus }, { auth: true });
       setItems((prev) => prev.map((x) => x.id === r.id ? { ...x, status: newStatus } : x));
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e)); }
     finally { setBusyId(null); }
   }
 

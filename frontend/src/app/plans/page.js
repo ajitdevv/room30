@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 
 function loadRzp() {
@@ -80,7 +81,7 @@ export default function PlansPage() {
     setBusyId(plan.id);
     try {
       const ok = await loadRzp();
-      if (!ok) throw new Error('Failed to load Razorpay');
+      if (!ok) throw new Error("We couldn't load the payment checkout. Please check your connection and try again.");
       const { order, key_id } = await apiPost('/api/payments/order', { plan_id: plan.id });
 
       const rzp = new window.Razorpay({
@@ -96,13 +97,13 @@ export default function PlansPage() {
           try {
             await apiPost('/api/payments/verify', { ...resp, plan_id: plan.id });
             router.push('/dashboard');
-          } catch (e) { setErr(e.message); }
+          } catch (e) { setErr(friendlyError(e, { fallback: 'Payment succeeded but we couldn\'t confirm it. Please refresh — if it still looks wrong, contact support@room30.in.' })); }
         },
         modal: { ondismiss: () => setBusyId(null) },
       });
       rzp.open();
     } catch (e) {
-      setErr(e.message);
+      setErr(friendlyError(e));
       setBusyId(null);
     }
   }

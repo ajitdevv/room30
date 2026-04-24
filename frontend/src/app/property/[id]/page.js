@@ -3,6 +3,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 import { formatListingNumber } from '@/lib/format';
 import ReportModal from '@/app/_components/ReportModal';
@@ -33,7 +34,7 @@ export default function PropertyDetail({ params }) {
       try {
         const r = await apiGet(`/api/properties/${id}`, { auth: !!u });
         setProp(r.property);
-      } catch (e) { setErr(e.message); }
+      } catch (e) { setErr(friendlyError(e, { context: 'property' })); }
     })();
 
     // Fire-and-forget view counter. Debounce to once per day per listing
@@ -65,7 +66,7 @@ export default function PropertyDetail({ params }) {
       setProp((p) => ({ ...p, owner_phone: r.owner_phone }));
     } catch (e) {
       if (e.status === 402) setSubModal('unlock');
-      else setUnlockErr(e.message);
+      else setUnlockErr(friendlyError(e));
     } finally {
       setUnlocking(false);
     }
@@ -92,7 +93,7 @@ export default function PropertyDetail({ params }) {
       router.push(`/chat/${prop.owner_id}?property=${prop.id}`);
     } catch (e) {
       if (e.status === 402) setSubModal('chat');
-      else setErr(e.message);
+      else setErr(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -584,7 +585,7 @@ function ReviewsSection({ ownerId, ownerName, propertyId, currentUser, onLoginRe
       setMine(review);
       setEditing(false);
     } catch (e) {
-      setFormErr(e.message || 'Could not save review.');
+      setFormErr(friendlyError(e, { fallback: 'Could not save review.' }));
     } finally {
       setSubmitting(false);
     }

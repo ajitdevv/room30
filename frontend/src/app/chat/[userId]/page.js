@@ -2,6 +2,7 @@
 import { Suspense, use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiGet, apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatListingNumber } from '@/lib/format';
@@ -70,7 +71,7 @@ function ChatRoom({ userId }) {
       // other and properties only set if the identity changes.
       setOther((prev) => (prev?.id === r.other?.id ? prev : r.other || null));
       setProperties((prev) => (prev.length === (r.properties?.length || 0) ? prev : r.properties || []));
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e, { context: 'chat' })); }
   }
 
   async function send(e) {
@@ -92,7 +93,7 @@ function ChatRoom({ userId }) {
         setPendingText(body);
         setShowSub(true);
       } else {
-        setErr(e.message);
+        setErr(friendlyError(e, { context: 'chat' }));
       }
     } finally {
       setSending(false);

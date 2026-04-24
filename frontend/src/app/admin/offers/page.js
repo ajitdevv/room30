@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 
 const PAGE_SIZE = 15;
@@ -40,7 +41,7 @@ export default function AdminOffersPage() {
       setTotal(r.total || 0);
       setNotice(r.notice || '');
     } catch (e) {
-      setErr(e.message);
+      setErr(friendlyError(e));
       if (e.body?.notice) setNotice(e.body.notice);
     } finally {
       setLoading(false);
@@ -57,28 +58,28 @@ export default function AdminOffersPage() {
       await apiDelete(`/api/admin/offers/${id}`);
       setOffers((xs) => xs.filter((x) => x.id !== id));
       setTotal((t) => Math.max(0, t - 1));
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert(friendlyError(e)); }
   }
 
   async function toggleActive(o) {
     try {
       const r = await apiPatch(`/api/admin/offers/${o.id}`, { is_active: !o.is_active });
       setOffers((xs) => xs.map((x) => (x.id === o.id ? r.offer : x)));
-    } catch (e) { alert(e.message); }
+    } catch (e) { alert(friendlyError(e)); }
   }
 
   return (
     <div>
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Offers</h1>
-          <p className="mt-0.5 text-sm text-[var(--muted)]">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Offers</h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">
             Create banners and popups to drive plan purchases. Changes appear on the live site immediately.
           </p>
         </div>
         <button
           onClick={openNew}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:brightness-110"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-full bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:brightness-110 sm:self-auto"
         >
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           New offer
@@ -144,7 +145,7 @@ function OfferRow({ o, onEdit, onDelete, onToggle }) {
   const expired  = o.ends_at && new Date(o.ends_at).getTime() < now;
 
   return (
-    <li className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition hover:border-indigo-400/40">
+    <li className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 transition hover:border-indigo-400/40 sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         <PreviewChip offer={o} />
         <div className="min-w-0 flex-1">
@@ -169,21 +170,21 @@ function OfferRow({ o, onEdit, onDelete, onToggle }) {
               <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-500/20 dark:text-amber-300">Ends soon</span>
             )}
           </div>
-          <div className="mt-1.5 font-semibold tracking-tight">{o.title}</div>
+          <div className="mt-2 font-semibold tracking-tight">{o.title}</div>
           {o.subtitle && <div className="mt-0.5 line-clamp-2 text-sm text-[var(--muted)]">{o.subtitle}</div>}
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--muted)]">
-            <span>CTA: <span className="font-semibold text-[var(--fg)]">{o.cta_label || '—'}</span> → {o.cta_href || '/plans'}</span>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-snug text-[var(--muted)]">
+            <span className="line-clamp-1">CTA: <span className="font-semibold text-[var(--fg)]">{o.cta_label || '—'}</span> → {o.cta_href || '/plans'}</span>
             <span>Priority: {o.priority}</span>
-            {o.starts_at && <span>Starts: {new Date(o.starts_at).toLocaleString()}</span>}
-            {o.ends_at   && <span>Ends: {new Date(o.ends_at).toLocaleString()}</span>}
+            {o.starts_at && <span>Starts: {formatOfferDate(o.starts_at)}</span>}
+            {o.ends_at   && <span>Ends: {formatOfferDate(o.ends_at)}</span>}
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button onClick={onToggle} className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold hover:border-indigo-400 hover:text-indigo-500">
+        <div className="flex gap-2 sm:shrink-0 sm:flex-wrap sm:items-center">
+          <button onClick={onToggle} className="flex-1 rounded-full border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-indigo-400 hover:text-indigo-500 sm:flex-none sm:py-1.5">
             {o.is_active ? 'Pause' : 'Resume'}
           </button>
-          <button onClick={onEdit} className="rounded-full bg-[var(--fg)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] hover:opacity-90">Edit</button>
-          <button onClick={onDelete} className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10">Delete</button>
+          <button onClick={onEdit} className="flex-1 rounded-full bg-[var(--fg)] px-3 py-2 text-xs font-semibold text-[var(--bg)] hover:opacity-90 sm:flex-none sm:py-1.5">Edit</button>
+          <button onClick={onDelete} className="flex-1 rounded-full border border-red-300 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10 sm:flex-none sm:py-1.5">Delete</button>
         </div>
       </div>
     </li>
@@ -203,6 +204,18 @@ function PreviewChip({ offer }) {
       {offer.subtitle && <div className="mt-0.5 line-clamp-1 text-[10px] opacity-90">{offer.subtitle}</div>}
     </div>
   );
+}
+
+function formatOfferDate(iso) {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: '2-digit' }),
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function variantClass(v) {
@@ -252,7 +265,7 @@ function OfferForm({ initial, onClose, onSaved }) {
         : await apiPost('/api/admin/offers', body);
       onSaved(r.offer);
     } catch (e2) {
-      setErr(typeof e2.body?.error === 'object' ? 'Invalid fields' : (e2.message || 'Failed'));
+      setErr(friendlyError(e2, { fallback: "We couldn't save the offer. Please try again." }));
     } finally {
       setSaving(false);
     }

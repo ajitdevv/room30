@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 import { Header } from '../users/page';
 
@@ -38,7 +39,7 @@ export default function AuditPage() {
         setNotice(r.notice || '');
         setErr('');
       })
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e)))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page, entity]);
@@ -47,18 +48,20 @@ export default function AuditPage() {
     <div>
       <Header title="Audit log" subtitle="Every change made through the admin dashboard." count={total} />
 
-      <div className="mb-4 inline-flex flex-wrap gap-1 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs font-semibold">
-        {['', 'user', 'property', 'report', 'review', 'plan'].map((v) => (
-          <button
-            key={v || 'all'}
-            onClick={() => setEntity(v)}
-            className={`rounded-full px-3 py-1.5 capitalize transition ${
-              entity === v ? 'bg-[var(--fg)] text-[var(--bg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'
-            }`}
-          >
-            {v || 'All'}
-          </button>
-        ))}
+      <div className="mb-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="inline-flex whitespace-nowrap gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs font-semibold">
+          {['', 'user', 'property', 'report', 'review', 'plan'].map((v) => (
+            <button
+              key={v || 'all'}
+              onClick={() => setEntity(v)}
+              className={`rounded-full px-3 py-1.5 capitalize transition ${
+                entity === v ? 'bg-[var(--fg)] text-[var(--bg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'
+              }`}
+            >
+              {v || 'All'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {err && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{err}</div>}
@@ -85,9 +88,9 @@ export default function AuditPage() {
         ) : (
           <ul className="divide-y divide-[var(--border)]">
             {entries.map((e) => (
-              <li key={e.id} className="px-4 py-3 sm:px-5">
+              <li key={e.id} className="px-3 py-3 sm:px-5">
                 <button
-                  className="flex w-full items-start gap-3 text-left"
+                  className="flex w-full items-start gap-2.5 text-left sm:gap-3"
                   onClick={() => setExpanded(expanded === e.id ? null : e.id)}
                 >
                   <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/15 to-fuchsia-500/15 text-indigo-600 dark:text-indigo-300">
@@ -96,18 +99,18 @@ export default function AuditPage() {
                     </svg>
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                       <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
                         {e.action}
                       </span>
                       <span className="text-[10px] text-[var(--muted)]">
-                        {new Date(e.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(e.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <div className="mt-1 text-sm">{e.summary || `${e.entity_type} ${e.entity_id || ''}`}</div>
+                    <div className="mt-1 line-clamp-2 text-sm leading-snug">{e.summary || `${e.entity_type} ${e.entity_id || ''}`}</div>
                     <div className="mt-0.5 text-[11px] text-[var(--muted)]">by {e.admin_name || e.admin_email || '—'}</div>
                   </div>
-                  <svg viewBox="0 0 24 24" className={`h-4 w-4 text-[var(--muted)] transition ${expanded === e.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                  <svg viewBox="0 0 24 24" className={`mt-1 h-4 w-4 flex-shrink-0 text-[var(--muted)] transition ${expanded === e.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
 
                 {expanded === e.id && (

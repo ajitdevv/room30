@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import ImageUpload from './ImageUpload';
 import CelebrationOverlay from './CelebrationOverlay';
 
@@ -121,11 +122,7 @@ export default function PropertyWizard({ onCreated }) {
       }, 3300);
     } catch (e) {
       console.error('[publish] failed', { payload, error: e, body: e.body });
-      const msg =
-        typeof e.body?.error === 'string' ? e.body.error
-        : e.body?.details ? `${e.body.error || 'Error'} — ${e.body.details}`
-        : e.message || 'Publish failed';
-      setErr(msg);
+      setErr(friendlyError(e, { fallback: "We couldn't publish your listing. Please try again." }));
     } finally {
       setBusy(false);
     }

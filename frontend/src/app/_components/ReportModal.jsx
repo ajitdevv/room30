@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 import { formatListingNumber } from '@/lib/format';
 
@@ -42,7 +43,7 @@ export default function ReportModal({ propertyId, listingNumber, onClose, onRequ
       });
       setDone(true);
     } catch (e2) {
-      setErr(typeof e2.body?.error === 'string' ? e2.body.error : (e2.message || 'Report failed'));
+      setErr(friendlyError(e2, { fallback: "We couldn't submit your report. Please try again." }));
     } finally {
       setBusy(false);
     }

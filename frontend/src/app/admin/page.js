@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { LineChart, BarList } from './_components/Charts';
 
 export default function AdminOverview() {
@@ -33,7 +34,7 @@ export default function AdminOverview() {
         setRevenue((c3.series || []).map((p) => ({ ...p, value: Math.round((p.value || 0) / 100) })));
         setRecentAudit(a.entries || []);
         setRecentReports(r.reports || []);
-      } catch (e) { setErr(e.message); }
+      } catch (e) { setErr(friendlyError(e)); }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet, apiDelete } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import Pagination from '../_components/Pagination';
 import { Header } from '../users/page';
 import { ConfirmModal } from '../listings/page';
@@ -27,7 +28,7 @@ export default function ReviewsAdmin() {
         setNotice(r.notice || '');
         setErr('');
       })
-      .catch((e) => alive && setErr(e.message))
+      .catch((e) => alive && setErr(friendlyError(e)))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [page]);
@@ -40,7 +41,7 @@ export default function ReviewsAdmin() {
       setItems((prev) => prev.filter((x) => x.id !== r.id));
       setTotal((t) => Math.max(0, t - 1));
       setConfirmDel(null);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(friendlyError(e)); }
     finally { setBusyId(null); }
   }
 

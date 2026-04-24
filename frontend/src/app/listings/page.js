@@ -3,6 +3,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { friendlyError } from '@/lib/errors';
 import { formatListingNumber } from '@/lib/format';
 import SearchBox from '../_components/SearchBox';
 import SaveButton from '../_components/SaveButton';
@@ -59,9 +60,10 @@ function Listings() {
     params.set('limit', '200');
     let cancelled = false;
     setLoading(true);
+    setErr('');
     apiGet(`/api/properties?${params.toString()}`)
       .then((r) => { if (!cancelled) setItems(r.properties || []); })
-      .catch((e) => { if (!cancelled) setErr(e.message); })
+      .catch((e) => { if (!cancelled) setErr(friendlyError(e, { context: 'listing' })); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [q, debounced]);

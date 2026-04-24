@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { friendlyAuthError } from '@/lib/errors';
 
 export default function LoginPage() {
   return (
@@ -42,7 +43,7 @@ function LoginForm() {
       const dest = next || (role === 'owner' ? '/dashboard' : '/listings');
       router.push(dest);
     } catch (e2) {
-      setErr(e2.message || 'Something went wrong');
+      setErr(friendlyAuthError(e2, mode));
     } finally {
       setBusy(false);
     }

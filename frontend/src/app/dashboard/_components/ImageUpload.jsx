@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { friendlyError } from '@/lib/errors';
 import { supabase } from '@/lib/supabaseClient';
 
 const BUCKET = 'property-images';
@@ -43,26 +44,23 @@ export default function ImageUpload({ urls, onChange }) {
           console.error('[image upload] storage error', upErr);
           // Supabase storage errors are often cryptic — translate common ones.
           const m = upErr.message || '';
-          if (m.toLowerCase().includes('bucket not found')) {
-            throw new Error('Storage bucket "property-images" missing. Run schema_patches/02_storage_bucket.sql in Supabase.');
-          }
-          if (m.toLowerCase().includes('row-level security') || m.toLowerCase().includes('policy')) {
-            throw new Error('Upload blocked by storage policy. Run 02_storage_bucket.sql to set policies.');
+          if (m.toLowerCase().includes('bucket not found') || m.toLowerCase().includes('row-level security') || m.toLowerCase().includes('policy')) {
+            throw new Error("Photo upload isn't available right now. Please try again later or contact support.");
           }
           if (m.toLowerCase().includes('mime')) {
-            throw new Error(`File type not allowed. Only PNG, JPG, WebP, GIF.`);
+            throw new Error('That file type isn\'t supported. Please use PNG, JPG, WebP, or GIF.');
           }
-          throw upErr;
+          throw new Error("We couldn't upload that photo. Please try again.");
         }
 
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        if (!pub?.publicUrl) throw new Error('Upload succeeded but public URL is empty. Check bucket is "public".');
+        if (!pub?.publicUrl) throw new Error("We couldn't finalise that upload. Please try again.");
         newUrls.push(pub.publicUrl);
       }
       onChange([...urls, ...newUrls]);
     } catch (e2) {
       console.error('[image upload] failed', e2);
-      setErr(e2.message || 'Upload failed');
+      setErr(friendlyError(e2, { fallback: "We couldn't upload that photo. Please try again." }));
     } finally {
       setBusy(false);
     }
