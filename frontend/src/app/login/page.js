@@ -53,12 +53,14 @@ function LoginForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
           });
-          const { exists } = await res.json();
-          msg = exists
+          if (!res.ok) throw new Error('Check failed');
+          const data = await res.json();
+          msg = data.exists
             ? 'Incorrect password. Please try again or reset your password.'
             : 'You are not signed up with this email. Create an account to get started.';
-        } catch {
-          msg = 'Unable to verify account. Please try again.';
+        } catch (err) {
+          console.error('Email check error:', err);
+          msg = 'Incorrect email or password. Please check and try again.';
         }
       }
 

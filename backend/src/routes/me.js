@@ -8,17 +8,20 @@ const router = Router();
 router.post('/check-email', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (!email) return res.status(400).json({ exists: false });
 
-    const { data } = await supabaseAdmin
+    const normalizedEmail = email.toLowerCase().trim();
+    const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('id')
-      .eq('email', email.toLowerCase())
+      .ilike('email', normalizedEmail)
       .maybeSingle();
 
+    if (error) console.error('Email check error:', error);
     res.json({ exists: !!data });
   } catch (e) {
-    res.status(500).json({ error: 'Could not check email' });
+    console.error('Email check exception:', e);
+    res.json({ exists: false });
   }
 });
 
