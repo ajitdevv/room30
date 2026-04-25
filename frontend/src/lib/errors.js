@@ -79,9 +79,8 @@ export function friendlyAuthError(e, mode = 'signin') {
   const code = (e?.code || e?.error_code || '').toLowerCase();
 
   if (code === 'invalid_credentials' || raw.includes('invalid login credentials')) {
-    return mode === 'signin'
-      ? "We couldn't find an account with that email and password. Please check and try again."
-      : "Those details don't look right. Please try again.";
+    // Return a special marker so the component can handle async email checking
+    return mode === 'signin' ? '__CHECK_EMAIL__' : "Those details don't look right. Please try again.";
   }
   if (raw.includes('email not confirmed'))
     return 'Please confirm your email address before signing in. Check your inbox for the confirmation link.';

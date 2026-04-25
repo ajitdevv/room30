@@ -4,6 +4,24 @@ import { supabaseAdmin } from '../lib/supabase.js';
 
 const router = Router();
 
+// POST /api/me/check-email — check if an email is registered (for login error clarity)
+router.post('/check-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    res.json({ exists: !!data });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not check email' });
+  }
+});
+
 // GET /api/me  — profile + active subscription
 router.get('/', requireAuth, async (req, res) => {
   const { data: profile } = await supabaseAdmin

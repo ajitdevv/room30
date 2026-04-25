@@ -43,7 +43,26 @@ function LoginForm() {
       const dest = next || (role === 'owner' ? '/dashboard' : '/listings');
       router.push(dest);
     } catch (e2) {
-      setErr(friendlyAuthError(e2, mode));
+      let msg = friendlyAuthError(e2, mode);
+
+      // Special handling for invalid credentials in signin: check if email is registered
+      if (msg === '__CHECK_EMAIL__') {
+        try {
+          const res = await fetch('/api/me/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const { exists } = await res.json();
+          msg = exists
+            ? 'Incorrect password. Please try again or reset your password.'
+            : 'No account found with this email. Create one to get started.';
+        } catch {
+          msg = 'Unable to verify account. Please try again.';
+        }
+      }
+
+      setErr(msg);
     } finally {
       setBusy(false);
     }
