@@ -36,7 +36,7 @@ npm install
 npm run dev               # http://localhost:4000
 ```
 
-Health check: `curl http://localhost:4000/health`
+Health check: `curl https://room30.onrender.com/health`
 
 `.env` keys:
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`

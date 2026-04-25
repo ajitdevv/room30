@@ -1,7 +1,7 @@
 'use client';
 import { supabase } from './supabaseClient';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://room30.onrender.com';
 
 // Treat the access token as stale if it's within this many seconds of expiry —
 // refresh preemptively so long-idle tabs don't spam 401s.

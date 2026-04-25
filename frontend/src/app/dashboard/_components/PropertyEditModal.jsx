@@ -75,7 +75,7 @@ export default function PropertyEditModal({ property, onClose, onSaved }) {
       const { supabase } = await import('@/lib/supabaseClient');
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/properties/${property.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://room30.onrender.com'}/api/properties/${property.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),

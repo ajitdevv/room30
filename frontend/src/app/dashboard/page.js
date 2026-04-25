@@ -69,7 +69,7 @@ function OwnerDashboard({ profile, props, onReload }) {
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/properties/${p.id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://room30.onrender.com'}/api/properties/${p.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_active: !p.is_active }),
