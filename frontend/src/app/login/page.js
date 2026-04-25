@@ -56,7 +56,7 @@ function LoginForm() {
           const { exists } = await res.json();
           msg = exists
             ? 'Incorrect password. Please try again or reset your password.'
-            : 'No account found with this email. Create one to get started.';
+            : 'You are not signed up with this email. Create an account to get started.';
         } catch {
           msg = 'Unable to verify account. Please try again.';
         }
