@@ -53,13 +53,18 @@ function LoginForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
           });
-          if (!res.ok) throw new Error('Check failed');
           const data = await res.json();
-          msg = data.exists
-            ? 'Incorrect password. Please try again or reset your password.'
-            : 'You are not signed up with this email. Create an account to get started.';
+          console.log('Email check response:', { status: res.status, data });
+
+          if (typeof data.exists === 'boolean') {
+            msg = data.exists
+              ? 'Incorrect password. Please try again or reset your password.'
+              : 'You are not signed up with this email. Create an account to get started.';
+          } else {
+            throw new Error('Invalid response');
+          }
         } catch (err) {
-          console.error('Email check error:', err);
+          console.error('Email check failed:', err);
           msg = 'Incorrect email or password. Please check and try again.';
         }
       }

@@ -8,17 +8,20 @@ const router = Router();
 router.post('/check-email', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ exists: false });
+    if (!email) return res.json({ exists: false });
 
     const normalizedEmail = email.toLowerCase().trim();
-    const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
 
-    if (error) console.error('Email check error:', error);
-    res.json({ exists: !!data });
+    // Check in auth.users table (most reliable source of truth)
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (error) {
+      console.error('Auth list users error:', error);
+      return res.json({ exists: false });
+    }
+
+    const exists = users.some((u) => u.email?.toLowerCase() === normalizedEmail);
+    res.json({ exists });
   } catch (e) {
     console.error('Email check exception:', e);
     res.json({ exists: false });
