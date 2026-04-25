@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { friendlyAuthError } from '@/lib/errors';
+import { apiPost } from '@/lib/api';
 
 export default function LoginPage() {
   return (
@@ -48,24 +49,13 @@ function LoginForm() {
       // Special handling for invalid credentials in signin: check if email is registered
       if (msg === '__CHECK_EMAIL__') {
         try {
-          const res = await fetch('/api/me/check-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          });
-          const data = await res.json();
-          console.log('Email check response:', { status: res.status, data });
-
-          if (typeof data.exists === 'boolean') {
-            msg = data.exists
-              ? 'Incorrect password. Please try again or reset your password.'
-              : 'You are not signed up with this email. Create an account to get started.';
-          } else {
-            throw new Error('Invalid response');
-          }
+          const data = await apiPost('/api/me/check-email', { email }, { auth: false });
+          msg = data.exists
+            ? 'Incorrect password. Please try again or reset your password.'
+            : 'You are not signed up with this email. Create an account to get started.';
         } catch (err) {
           console.error('Email check failed:', err);
-          msg = 'Incorrect email or password. Please check and try again.';
+          msg = 'You are not signed up with this email. Create an account to get started.';
         }
       }
 
